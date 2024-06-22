@@ -52,20 +52,9 @@ namespace Chat_Client.Network
 
         private void serverHandler()
         {
-            PacketType packetType;
             while (true)
             {
-                byte[] data = new byte[sizeof(PacketType)];
-                int bytesRead = serverSocket.Receive(data);
-
-                if (bytesRead == 0)
-                {
-                    Console.WriteLine("INFO: Server closed connection");
-                    return; // Сервер закрыл соединение
-                }
-
-                packetType = (PacketType)BitConverter.ToInt32(data, 0);
-                packetHandler(packetType);
+                packetHandler(getMessageFromServer<PacketType>());
             }
         }
 
@@ -104,9 +93,15 @@ namespace Chat_Client.Network
         //Получение пакета от сервера
         public static T getMessageFromServer<T>()
         {
-            byte[] buffer = new byte[Marshal.SizeOf<T>()];
-            serverSocket.Receive(buffer);
+            byte[] buffer;
 
+            //Создаем набор байтов по размеру типа данных T
+            if (typeof(T).IsEnum)
+                buffer = new byte[sizeof(int)];
+            else
+                buffer = new byte[Marshal.SizeOf<T>()];
+
+            serverSocket.Receive(buffer);
             return byteArrayToObject<T>(buffer);
         }
 
