@@ -54,7 +54,15 @@ namespace Chat_Client.Network
         {
             while (true)
             {
-                packetHandler(getMessageFromServer<PacketType>());
+                try
+                {
+                    packetHandler(getMessageFromServer<PacketType>());
+                }
+                catch (SocketException) //Вызывается при отключении клиента от сервера (Другого способа не нашел, но и не сильно долго искал, в идеале избавиться от try catch)
+                {
+                    onServerDisconnected();
+                    return;
+                }
             }
         }
 
@@ -125,12 +133,23 @@ namespace Chat_Client.Network
         //Отправка пакета серверу
         public static void sendMessage<T>(T message)
         {
+            if (!serverSocket.Connected)
+            {
+                Console.WriteLine("[ERROR]: The connection to the server is lost");
+                return;
+            }
             serverSocket.Send(objectToByteArray(message));
         }
 
         //Отправка пакета string серверу
         public static void sendMessage(string message)
         {
+            if (!serverSocket.Connected)
+            {
+                Console.WriteLine("[ERROR]: The connection to the server is lost");
+                return;
+            }
+
             byte[] messageBytes = Encoding.UTF8.GetBytes(message);
             byte[] lengthBytes = BitConverter.GetBytes(messageBytes.Length);
 
@@ -188,6 +207,13 @@ namespace Chat_Client.Network
             }
 
             throw new InvalidOperationException("Unsupported type");
+        }
+
+        private void onServerDisconnected()
+        {
+            Console.WriteLine("[ERROR]: The connection to the server is lost");
+            serverSocket.Close(); //Закрываем серверный сокет
+            //TODO: В реальном приложении при таком исходе нужно блокировать все элементы управления и запускать цикл попыток реконнекта к серверу
         }
     }
 }

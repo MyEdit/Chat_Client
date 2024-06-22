@@ -17,8 +17,8 @@ namespace Chat_Client
                 return;
             }
 
-            auth();
             networkClient.startListening();
+            auth();
             ListenForUserInput();
 
             PauseBeforeExit();
